@@ -1,47 +1,36 @@
-# .github/workflows/embold-scan.yml
-
-name: Embold Code Quality Scan
-
-# This workflow runs on every push to the 'main' branch
+name: .NET
 on:
   push:
-    branches: [ master ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ master ]
-  workflow_dispatch: 
-
+    branches: [ "master" ]
 jobs:
-  embold-scan:
-    # Use the latest version of Ubuntu to run the job
+  build:
     runs-on: ubuntu-latest
-
+    container: ubuntu:20.04
     steps:
-      # Step 1: Check out your repository code so the workflow can access it
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # Step 2: Download and extract the Embold scanner
-      - name: Download and Extract Scanner
-        run: |
-          curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
-          tar xvf browserstack-codequality-scanner-archive.tar.gz
-
-      # Step 3: Download the repository configuration file using a secure token
-      - name: Download Repository Configuration
-        run: |
-          curl --silent --location --request GET "http://3.66.212.6:3000/api/v1/repositories/208492414af4e871b12863a9ccf8e075/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN }}" -o repository-configuration.json
-
-      # Step 4: Run the Embold analysis scanner
-      - name: Run Embold Scanner
-        env:
-          EMBOLD_TOKEN: ${{ secrets.EMBOLD_SCAN_TOKEN }}
-        run: |
-          ./browserstack-codequality-scanner/bin/embold-scanner analyse \
-            -u http://3.66.212.6:3000/ \
-            -t $EMBOLD_TOKEN \
-            -r 208492414af4e871b12863a9ccf8e075 \
-            -b . \
-            -d ./embold-data \
-            -c ./repository-configuration.json \
-            -l ./embold-log \
-            -sh ./embold-scanner-home
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies (curl, wget, libssl1.1)
+      run: |
+        apt-get update
+        apt-get install curl wget libssl1.1 -y 
+    
+    # NEW STEP: Install Java (OpenJDK 11 is a common, stable version)
+    - name: Install Java for Embold Scanner
+      run: |
+        apt-get install openjdk-11-jre -y
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 3.0.x
+        
+    - name: Embold Analyse
+      run: |
+        curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
+        tar xvf browserstack-codequality-scanner-archive.tar.gz
+        echo "Download and extract BrowserStack CQ Scanner done"
+        curl --silent --location --request GET "http://3.66.212.6:3000/api/v1/repositories/208492414af4e871b12863a9ccf8e075/scans/config/download" --header "Authorization:Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_CS}}" -o repository-configuration.json
+        echo "Download repository configuration file done"
+        ./browserstack-codequality-scanner/bin/embold-scanner analyse -u http://3.66.212.6:3000 -t ${{ secrets.EMBOLD_SCAN_TOKEN_CS }} -r 208492414af4e871b12863a9ccf8e075 -b . -d ./embold-data -c ./repository-configuration.json -l ./embold-log -sh $GITHUB_WORKSPACE/embold-scanner-home -v
