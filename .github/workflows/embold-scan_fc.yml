@@ -37,7 +37,7 @@ jobs:
           curl https://v1.embold.io/nfs/CLI/browserstack-codequality-scanner.tar.gz -o browserstack-codequality-scanner-archive.tar.gz
           tar xvf browserstack-codequality-scanner-archive.tar.gz
 
-      # Step 5: Download the repository configuration file
+      ## Step 5: Download the repository configuration file
       - name: Download Repository Configuration
         run: |
           curl --silent --location --request GET "http://18.184.13.138:3089/api/v1/repositories/947571eb6f595acaf1dee35f98137d44/scans/config/download" --header "Authorization: Bearer ${{ secrets.EMBOLD_SCAN_TOKEN_FC }}" -o repository-configuration.json
